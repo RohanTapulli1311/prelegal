@@ -6,10 +6,9 @@ import { NDAFormData, buildCoverPageMarkdown, buildStandardTermsMarkdown } from 
 
 interface NDAPreviewProps {
   data: NDAFormData;
-  onBack: () => void;
 }
 
-export default function NDAPreview({ data, onBack }: NDAPreviewProps) {
+export default function NDAPreview({ data }: NDAPreviewProps) {
   const coverPage = buildCoverPageMarkdown(data);
   const standardTerms = buildStandardTermsMarkdown(data);
 
@@ -24,42 +23,33 @@ export default function NDAPreview({ data, onBack }: NDAPreviewProps) {
     URL.revokeObjectURL(url);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
   return (
-    <div>
-      {/* Action bar — hidden when printing */}
-      <div className="no-print sticky top-0 z-10 bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
-        >
-          ← Back to Form
-        </button>
-        <div className="flex gap-3">
+    <div className="flex flex-col h-full">
+      {/* Sticky header with download buttons */}
+      <div className="no-print sticky top-0 z-10 bg-gray-50 border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+        <span className="text-sm font-medium text-gray-700">Live Preview</span>
+        <div className="flex gap-2">
           <button
             onClick={handleDownload}
-            className="text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className="text-xs px-3 py-1.5 border border-gray-300 rounded-lg bg-white hover:bg-gray-50 text-gray-700 transition-colors"
           >
             Download .md
           </button>
           <button
-            onClick={handlePrint}
-            className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => window.print()}
+            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Download / Print PDF
+            Print / Save PDF
           </button>
         </div>
       </div>
 
-      {/* Document */}
-      <div className="max-w-3xl mx-auto px-6 py-10 print:py-4 print:px-0">
+      {/* Document content */}
+      <div className="px-8 py-8 print:py-4 print:px-0">
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{coverPage}</ReactMarkdown>
         </div>
-        <div className="my-8 border-t border-gray-300 print:my-6" />
+        <div className="my-6 border-t border-gray-300 print:my-4" />
         <div className="prose prose-sm max-w-none">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{standardTerms}</ReactMarkdown>
         </div>
