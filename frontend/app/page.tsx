@@ -10,8 +10,8 @@ export default function Home() {
 
   return (
     <main className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Left panel — form */}
-      <div className="w-1/2 overflow-y-auto border-r border-gray-200 bg-white">
+      {/* Left panel — form (hidden when printing) */}
+      <div className="no-print w-1/2 overflow-y-auto border-r border-gray-200 bg-white">
         <div className="px-8 py-10">
           <NDAForm data={formData} onChange={setFormData} />
         </div>
