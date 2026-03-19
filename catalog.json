@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Mutual NDA",
+    "description": "A standard mutual non-disclosure agreement for sharing confidential information between two parties.",
+    "filename": "Mutual-NDA.md"
+  },
+  {
+    "name": "Mutual NDA Cover Page",
+    "description": "Cover page and deal terms summary for the Common Paper Mutual NDA.",
+    "filename": "Mutual-NDA-coverpage.md"
+  },
+  {
+    "name": "Cloud Service Agreement",
+    "description": "A standard agreement for cloud-based SaaS products covering subscription terms, data handling, and service commitments.",
+    "filename": "CSA.md"
+  },
+  {
+    "name": "Service Level Agreement",
+    "description": "A standard service level agreement defining uptime commitments, incident response, and remedies for service failures.",
+    "filename": "sla.md"
+  },
+  {
+    "name": "Design Partner Agreement",
+    "description": "An agreement for early-stage design partnerships, covering product feedback, IP rights, and limited access to pre-release software.",
+    "filename": "design-partner-agreement.md"
+  },
+  {
+    "name": "Professional Services Agreement",
+    "description": "A standard agreement for professional services engagements including consulting, implementation, and custom development work.",
+    "filename": "psa.md"
+  },
+  {
+    "name": "Data Processing Agreement",
+    "description": "A GDPR-compliant data processing agreement governing how a service provider processes personal data on behalf of a controller.",
+    "filename": "DPA.md"
+  },
+  {
+    "name": "Partnership Agreement",
+    "description": "A standard partnership agreement covering reseller, referral, and technology integration arrangements between companies.",
+    "filename": "Partnership-Agreement.md"
+  },
+  {
+    "name": "Software License Agreement",
+    "description": "A standard agreement for licensing software, covering grant of rights, restrictions, and support terms.",
+    "filename": "Software-License-Agreement.md"
+  },
+  {
+    "name": "Pilot Agreement",
+    "description": "A short-term pilot or proof-of-concept agreement allowing customers to evaluate software before committing to a full contract.",
+    "filename": "Pilot-Agreement.md"
+  },
+  {
+    "name": "Business Associate Agreement",
+    "description": "A HIPAA-compliant business associate agreement governing the handling of protected health information (PHI) by a service provider.",
+    "filename": "BAA.md"
+  },
+  {
+    "name": "AI Addendum",
+    "description": "An addendum addressing AI-specific terms including data use for model training, output disclaimers, and AI governance obligations.",
+    "filename": "AI-Addendum.md"
+  }
+]
