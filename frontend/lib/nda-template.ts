@@ -20,7 +20,10 @@ export interface NDAFormData {
 
 export const defaultFormData: NDAFormData = {
   purpose: "Evaluating whether to enter into a business relationship with the other party.",
-  effectiveDate: new Date().toISOString().split("T")[0],
+  effectiveDate: (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })(),
   mndaTermType: "expires",
   mndaTermYears: 1,
   confidentialityTermType: "years",
@@ -137,8 +140,8 @@ export function buildStandardTermsMarkdown(data: NDAFormData): string {
       ? `${data.confidentialityTermYears} year(s) from Effective Date`
       : "perpetuity";
 
-  const governingLaw = data.governingLaw || "[Governing Law]";
-  const jurisdiction = data.jurisdiction || "[Jurisdiction]";
+  const governingLaw = data.governingLaw || "[State not specified]";
+  const jurisdiction = data.jurisdiction || "[Jurisdiction not specified]";
 
   return `## Standard Terms
 
