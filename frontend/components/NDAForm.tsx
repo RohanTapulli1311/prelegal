@@ -2,9 +2,12 @@
 
 import { NDAFormData } from "@/lib/nda-template";
 
+type ApiStatus = "checking" | "connected" | "disconnected";
+
 interface NDAFormProps {
   data: NDAFormData;
   onChange: (data: NDAFormData) => void;
+  apiStatus: ApiStatus;
 }
 
 const inputCls =
@@ -13,15 +16,27 @@ const inputCls =
 const numberCls =
   "w-16 border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40";
 
-export default function NDAForm({ data, onChange }: NDAFormProps) {
+const statusConfig = {
+  checking:     { dot: "bg-yellow-400", label: "Connecting to API..." },
+  connected:    { dot: "bg-green-500",  label: "API connected" },
+  disconnected: { dot: "bg-red-400",    label: "API offline" },
+};
+
+export default function NDAForm({ data, onChange, apiStatus }: NDAFormProps) {
   const set = <K extends keyof NDAFormData>(key: K, value: NDAFormData[K]) =>
     onChange({ ...data, [key]: value });
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Mutual NDA Creator</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-2xl font-bold text-gray-900">Mutual NDA Creator</h1>
+          <span className="flex items-center gap-1.5 text-xs text-gray-500">
+            <span className={`w-2 h-2 rounded-full ${statusConfig[apiStatus].dot}`} />
+            {statusConfig[apiStatus].label}
+          </span>
+        </div>
+        <p className="text-sm text-gray-500">
           Fill in the details — the document updates live on the right.
         </p>
       </div>
