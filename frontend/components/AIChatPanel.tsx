@@ -14,6 +14,7 @@ interface AIChatPanelProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   apiStatus: ApiStatus;
+  title?: string;
 }
 
 const statusConfig = {
@@ -22,7 +23,7 @@ const statusConfig = {
   disconnected: { dot: "bg-red-400",    label: "AI offline" },
 };
 
-export default function AIChatPanel({ messages, onSend, isLoading, apiStatus }: AIChatPanelProps) {
+export default function AIChatPanel({ messages, onSend, isLoading, apiStatus, title = "Document Creator" }: AIChatPanelProps) {
   const [input, setInput] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -49,7 +50,7 @@ export default function AIChatPanel({ messages, onSend, isLoading, apiStatus }: 
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 bg-white flex items-center justify-between shrink-0">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: "#032147" }}>Mutual NDA Creator</h1>
+          <h1 className="text-xl font-bold" style={{ color: "#032147" }}>{title}</h1>
           <p className="text-xs text-gray-500 mt-0.5">Chat with AI to fill in your agreement</p>
         </div>
         <span className="flex items-center gap-1.5 text-xs text-gray-500">

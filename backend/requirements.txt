@@ -3,3 +3,5 @@ uvicorn[standard]==0.32.1
 litellm
 pydantic
 python-dotenv
+python-jose[cryptography]
+bcrypt
