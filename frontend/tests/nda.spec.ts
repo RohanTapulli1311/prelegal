@@ -1,30 +1,37 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
+
+const MOCK_REPLY = "Got it! Can you share the names and companies of both parties?";
+
+function mockChat(page: Page, fields: Record<string, unknown> = {}) {
+  return page.route("**/chat", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ reply: MOCK_REPLY, fields }),
+    });
+  });
+}
 
 test.describe("NDA Creator — layout and initial state", () => {
-  test("page loads with both panels visible", async ({ page }) => {
+  test("page loads with chat panel and preview visible", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Mutual NDA Creator" })).toBeVisible();
     await expect(page.getByText("Live Preview")).toBeVisible();
     await expect(page.getByRole("heading", { name: "Mutual Non-Disclosure Agreement" })).toBeVisible();
   });
 
-  test("default effective date matches today's local date", async ({ page }) => {
+  test("initial AI greeting is visible", async ({ page }) => {
     await page.goto("/");
-    const today = new Date();
-    const expected = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-    await expect(page.locator('input[type="date"]')).toHaveValue(expected);
+    await expect(page.getByText("I can help you create a Mutual Non-Disclosure Agreement")).toBeVisible();
   });
 
-  test("default purpose is pre-filled", async ({ page }) => {
+  test("chat input is present", async ({ page }) => {
     await page.goto("/");
-    const textarea = page.getByPlaceholder("e.g. Evaluating whether to enter into a business relationship...");
-    await expect(textarea).toHaveValue("Evaluating whether to enter into a business relationship with the other party.");
+    await expect(page.getByLabel("Chat message")).toBeVisible();
   });
 
-  test("default MNDA term radio is 'expires'", async ({ page }) => {
+  test("send button is present", async ({ page }) => {
     await page.goto("/");
-    await expect(page.getByRole("radio", { name: /Expires after/i })).toBeChecked();
-    await expect(page.getByRole("radio", { name: /Continues until terminated/i })).not.toBeChecked();
+    await expect(page.getByRole("button", { name: "Send" })).toBeVisible();
   });
 
   test("download buttons are visible", async ({ page }) => {
@@ -32,124 +39,80 @@ test.describe("NDA Creator — layout and initial state", () => {
     await expect(page.getByRole("button", { name: "Download .md" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Print / Save PDF" })).toBeVisible();
   });
-});
 
-test.describe("NDA Creator — live preview updates", () => {
-  test("typing in Purpose updates the preview instantly", async ({ page }) => {
+  test("document preview shows default placeholder text", async ({ page }) => {
     await page.goto("/");
-    const purposeField = page.getByPlaceholder("e.g. Evaluating whether to enter into a business relationship...");
-    await purposeField.fill("Testing a new AI integration");
-    await expect(page.locator(".prose").first()).toContainText("Testing a new AI integration");
-  });
-
-  test("purpose value propagates into Standard Terms sections 1 and 2", async ({ page }) => {
-    await page.goto("/");
-    const purposeField = page.getByPlaceholder("e.g. Evaluating whether to enter into a business relationship...");
-    await purposeField.fill("Joint product development");
-    const standardTerms = page.locator(".prose").last();
-    await expect(standardTerms).toContainText("Joint product development");
-  });
-
-  test("typing Governing Law updates cover page and section 9", async ({ page }) => {
-    await page.goto("/");
-    await page.getByPlaceholder("e.g. Delaware").fill("California");
-    const preview = page.locator(".prose");
-    await expect(preview.first()).toContainText("California");
-    await expect(preview.last()).toContainText("California");
-  });
-
-  test("empty Governing Law shows consistent placeholder in both sections", async ({ page }) => {
-    await page.goto("/");
-    // Governing Law is empty by default — check both sections show same placeholder
     await expect(page.locator(".prose").first()).toContainText("[State not specified]");
-    await expect(page.locator(".prose").last()).toContainText("[State not specified]");
-  });
-
-  test("empty Jurisdiction shows consistent placeholder in both sections", async ({ page }) => {
-    await page.goto("/");
-    await expect(page.locator(".prose").first()).toContainText("[Jurisdiction not specified]");
-    await expect(page.locator(".prose").last()).toContainText("[Jurisdiction not specified]");
   });
 });
 
-test.describe("NDA Creator — MNDA Term radio buttons", () => {
-  test("switching to 'until terminated' updates preview and disables years input", async ({ page }) => {
+test.describe("NDA Creator — chat interaction", () => {
+  test("typing in the chat input works", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("radio", { name: /Continues until terminated/i }).click();
-    await expect(page.locator(".prose").first()).toContainText("Continues until terminated");
-    const yearsInput = page.locator('input[type="number"]').first();
-    await expect(yearsInput).toBeDisabled();
+    const input = page.getByLabel("Chat message");
+    await input.fill("Evaluating a potential merger");
+    await expect(input).toHaveValue("Evaluating a potential merger");
   });
 
-  test("switching back to 'expires' re-enables years input", async ({ page }) => {
+  test("send button is disabled when input is empty", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("radio", { name: /Continues until terminated/i }).click();
-    await page.getByRole("radio", { name: /Expires after/i }).click();
-    const yearsInput = page.locator('input[type="number"]').first();
-    await expect(yearsInput).toBeEnabled();
+    await expect(page.getByRole("button", { name: "Send" })).toBeDisabled();
   });
 
-  test("changing years value updates preview text", async ({ page }) => {
+  test("send button becomes enabled when input has text", async ({ page }) => {
     await page.goto("/");
-    await page.locator('input[type="number"]').first().fill("3");
-    await expect(page.locator(".prose").first()).toContainText("3 year(s) from Effective Date");
-  });
-});
-
-test.describe("NDA Creator — Term of Confidentiality radio buttons", () => {
-  test("switching to 'in perpetuity' updates preview", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("radio", { name: /In perpetuity/i }).click();
-    await expect(page.locator(".prose").first()).toContainText("In perpetuity.");
-    await expect(page.locator(".prose").last()).toContainText("perpetuity");
+    await page.getByLabel("Chat message").fill("Hello");
+    await expect(page.getByRole("button", { name: "Send" })).toBeEnabled();
   });
 
-  test("switching to 'in perpetuity' disables confidentiality years input", async ({ page }) => {
+  test("sending a message adds it to the chat", async ({ page }) => {
+    await mockChat(page);
     await page.goto("/");
-    await page.getByRole("radio", { name: /In perpetuity/i }).click();
-    // Second number input is confidentiality years
-    const confYearsInput = page.locator('input[type="number"]').nth(1);
-    await expect(confYearsInput).toBeDisabled();
-  });
-});
-
-test.describe("NDA Creator — Party info in signature table", () => {
-  test("party 1 name appears in signature table", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("textbox", { name: "Full name" }).first().fill("Alice Johnson");
-    await expect(page.getByRole("cell", { name: "Alice Johnson" })).toBeVisible();
+    await page.getByLabel("Chat message").fill("Evaluating a potential merger");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText("Evaluating a potential merger")).toBeVisible();
   });
 
-  test("party 2 name appears in signature table", async ({ page }) => {
+  test("AI response appears after sending a message", async ({ page }) => {
+    await mockChat(page);
     await page.goto("/");
-    await page.getByRole("textbox", { name: "Full name" }).nth(1).fill("Bob Smith");
-    await expect(page.getByRole("cell", { name: "Bob Smith" })).toBeVisible();
+    await page.getByLabel("Chat message").fill("Hello");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.getByText(MOCK_REPLY)).toBeVisible();
   });
 
-  test("party 1 company appears in signature table", async ({ page }) => {
+  test("input clears after sending", async ({ page }) => {
+    await mockChat(page);
     await page.goto("/");
-    await page.getByRole("textbox", { name: "Company" }).first().fill("Acme Corp");
-    await expect(page.getByRole("cell", { name: "Acme Corp" })).toBeVisible();
+    const input = page.getByLabel("Chat message");
+    await input.fill("Hello");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(input).toHaveValue("");
   });
 
-  test("empty party fields show blank placeholder in table", async ({ page }) => {
+  test("Enter key sends the message", async ({ page }) => {
+    await mockChat(page);
     await page.goto("/");
-    await expect(page.getByRole("cell", { name: "_________________" }).first()).toBeVisible();
-  });
-});
-
-test.describe("NDA Creator — Modifications section", () => {
-  test("modifications text appears in preview when filled in", async ({ page }) => {
-    await page.goto("/");
-    await page.getByPlaceholder("Leave blank if no modifications...").fill("Section 2 is amended to require 30 days notice.");
-    await expect(page.locator(".prose").first()).toContainText("MNDA Modifications");
-    await expect(page.locator(".prose").first()).toContainText("Section 2 is amended to require 30 days notice.");
+    await page.getByLabel("Chat message").fill("Hello");
+    await page.getByLabel("Chat message").press("Enter");
+    await expect(page.getByText(MOCK_REPLY)).toBeVisible();
   });
 
-  test("modifications section is absent when field is empty", async ({ page }) => {
+  test("mocked field update from AI refreshes the document preview", async ({ page }) => {
+    await mockChat(page, { purpose: "Joint product development for AI tools" });
     await page.goto("/");
-    // Default is empty — modifications heading should not appear
-    await expect(page.locator(".prose").first()).not.toContainText("MNDA Modifications");
+    await page.getByLabel("Chat message").fill("Our purpose is joint product development");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.locator(".prose").first()).toContainText("Joint product development for AI tools");
+  });
+
+  test("mocked governing law update reflects in both cover page and standard terms", async ({ page }) => {
+    await mockChat(page, { governingLaw: "California" });
+    await page.goto("/");
+    await page.getByLabel("Chat message").fill("We want California law");
+    await page.getByRole("button", { name: "Send" }).click();
+    await expect(page.locator(".prose").first()).toContainText("California");
+    await expect(page.locator(".prose").last()).toContainText("California");
   });
 });
 
