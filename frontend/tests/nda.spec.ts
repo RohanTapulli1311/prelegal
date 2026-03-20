@@ -1,6 +1,38 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, Page, BrowserContext } from "@playwright/test";
+import { SignJWT } from "jose";
+
+const JWT_SECRET = new TextEncoder().encode(
+  "e7deffacad9ededcd4f38b1ac8dd5f454dc0ce5b480133e32bea9783e43d130a"
+);
+const TEST_USER = { id: 1, name: "Test User", email: "test@example.com" };
 
 const MOCK_REPLY = "Got it! Can you share the names and companies of both parties?";
+
+async function loginAs(context: BrowserContext) {
+  const token = await new SignJWT({ sub: String(TEST_USER.id) })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("1d")
+    .sign(JWT_SECRET);
+
+  await context.addCookies([
+    {
+      name: "access_token",
+      value: token,
+      domain: "localhost",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax",
+    },
+    {
+      name: "user_info",
+      value: JSON.stringify(TEST_USER),
+      domain: "localhost",
+      path: "/",
+      httpOnly: false,
+      sameSite: "Lax",
+    },
+  ]);
+}
 
 function mockChat(page: Page, fields: Record<string, unknown> = {}, suggestedDocType?: string) {
   return page.route("**/chat", async (route) => {
@@ -9,13 +41,27 @@ function mockChat(page: Page, fields: Record<string, unknown> = {}, suggestedDoc
       body: JSON.stringify({
         reply: MOCK_REPLY,
         fields,
+        document_id: 1,
         suggested_document_type: suggestedDocType ?? null,
       }),
     });
   });
 }
 
+function mockDocuments(page: Page) {
+  return page.route("**/documents**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([]),
+    });
+  });
+}
+
 test.describe("Home page — document selection", () => {
+  test.beforeEach(async ({ context }) => {
+    await loginAs(context);
+  });
+
   test("home page loads with AI chat and document type cards", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Legal Document Assistant" })).toBeVisible();
@@ -58,6 +104,10 @@ test.describe("Home page — document selection", () => {
 });
 
 test.describe("NDA Creator — layout and initial state", () => {
+  test.beforeEach(async ({ context }) => {
+    await loginAs(context);
+  });
+
   test("page loads with chat panel and preview visible", async ({ page }) => {
     await page.goto("/document/mutual-nda");
     await expect(page.getByRole("heading", { name: "Mutual NDA Creator" })).toBeVisible();
@@ -90,9 +140,24 @@ test.describe("NDA Creator — layout and initial state", () => {
     await page.goto("/document/mutual-nda");
     await expect(page.locator(".prose").first()).toContainText("[State not specified]");
   });
+
+  test("header shows back button on document page", async ({ page }) => {
+    await page.goto("/document/mutual-nda");
+    await expect(page.getByRole("button", { name: /All documents/ })).toBeVisible();
+  });
+
+  test("back button navigates to home", async ({ page }) => {
+    await page.goto("/document/mutual-nda");
+    await page.getByRole("button", { name: /All documents/ }).click();
+    await expect(page).toHaveURL("/");
+  });
 });
 
 test.describe("NDA Creator — chat interaction", () => {
+  test.beforeEach(async ({ context }) => {
+    await loginAs(context);
+  });
+
   test("typing in the chat input works", async ({ page }) => {
     await page.goto("/document/mutual-nda");
     const input = page.getByLabel("Chat message");
@@ -162,6 +227,10 @@ test.describe("NDA Creator — chat interaction", () => {
 });
 
 test.describe("NDA Creator — download", () => {
+  test.beforeEach(async ({ context }) => {
+    await loginAs(context);
+  });
+
   test("Download .md triggers a file download", async ({ page }) => {
     await page.goto("/document/mutual-nda");
     const [download] = await Promise.all([
@@ -173,6 +242,10 @@ test.describe("NDA Creator — download", () => {
 });
 
 test.describe("Other document types", () => {
+  test.beforeEach(async ({ context }) => {
+    await loginAs(context);
+  });
+
   test("CSA page loads with correct title and preview", async ({ page }) => {
     await page.goto("/document/csa");
     await expect(page.getByRole("heading", { name: "Cloud Service Agreement Creator" })).toBeVisible();
@@ -201,5 +274,45 @@ test.describe("Other document types", () => {
     await page.getByLabel("Chat message").fill("12 month subscription, $5,000 per month");
     await page.getByRole("button", { name: "Send" }).click();
     await expect(page.locator(".prose").first()).toContainText("12 months");
+  });
+});
+
+test.describe("Auth — login and register pages", () => {
+  test("login page is accessible without auth", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByRole("button", { name: /Sign in/ })).toBeVisible();
+  });
+
+  test("register page is accessible without auth", async ({ page }) => {
+    await page.goto("/register");
+    await expect(page.getByRole("button", { name: /Create account/ })).toBeVisible();
+  });
+
+  test("unauthenticated user is redirected to login from home", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveURL(/\/login/);
+  });
+
+  test("unauthenticated user is redirected to login from document page", async ({ page }) => {
+    await page.goto("/document/mutual-nda");
+    await expect(page).toHaveURL(/\/login/);
+  });
+});
+
+test.describe("Dashboard", () => {
+  test.beforeEach(async ({ context }) => {
+    await loginAs(context);
+  });
+
+  test("dashboard loads for authenticated user", async ({ page }) => {
+    await mockDocuments(page);
+    await page.goto("/dashboard");
+    await expect(page.getByText("My Documents")).toBeVisible();
+  });
+
+  test("dashboard shows empty state with no documents", async ({ page }) => {
+    await mockDocuments(page);
+    await page.goto("/dashboard");
+    await expect(page.getByText("No documents yet")).toBeVisible();
   });
 });

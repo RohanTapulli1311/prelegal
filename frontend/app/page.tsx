@@ -2,8 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AIChatPanel, { ChatMessage } from "@/components/AIChatPanel";
+import Header from "@/components/Header";
 import { allDocuments } from "@/lib/documents/index";
+import { apiFetch } from "@/lib/api";
 
 type ApiStatus = "checking" | "connected" | "disconnected";
 
@@ -19,7 +22,7 @@ export default function Home() {
   const [apiStatus, setApiStatus] = useState<ApiStatus>("checking");
 
   useEffect(() => {
-    fetch("http://localhost:8000/health")
+    apiFetch("/health")
       .then((r) => (r.ok ? setApiStatus("connected") : setApiStatus("disconnected")))
       .catch(() => setApiStatus("disconnected"));
   }, []);
@@ -31,14 +34,16 @@ export default function Home() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await apiFetch("/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: updatedMessages, current_fields: {}, document_type: null }),
       });
+      if (response.status === 401) {
+        router.push("/login");
+        return;
+      }
       const data = await response.json();
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
-
       if (data.suggested_document_type) {
         setTimeout(() => router.push(`/document/${data.suggested_document_type}`), 800);
       }
@@ -53,46 +58,57 @@ export default function Home() {
   };
 
   return (
-    <main className="flex h-screen overflow-hidden bg-gray-50">
-      {/* Left panel — AI assistant chat */}
-      <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
-        <AIChatPanel
-          messages={messages}
-          onSend={sendMessage}
-          isLoading={isLoading}
-          apiStatus={apiStatus}
-          title="Legal Document Assistant"
-        />
-      </div>
+    <div className="flex flex-col h-screen overflow-hidden">
+      <Header />
+      <main className="flex flex-1 overflow-hidden bg-gray-50">
+        {/* Left panel — AI assistant chat */}
+        <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col">
+          <AIChatPanel
+            messages={messages}
+            onSend={sendMessage}
+            isLoading={isLoading}
+            apiStatus={apiStatus}
+            title="Legal Document Assistant"
+          />
+        </div>
 
-      {/* Right panel — document type cards */}
-      <div className="w-1/2 overflow-y-auto bg-gray-50">
-        <div className="px-6 py-5 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <h2 className="text-base font-semibold" style={{ color: "#032147" }}>
-            Available Document Types
-          </h2>
-          <p className="text-xs text-gray-500 mt-0.5">Click any document to start creating it</p>
-        </div>
-        <div className="p-4 grid grid-cols-2 gap-3">
-          {allDocuments.map((doc) => (
-            <button
-              key={doc.slug}
-              onClick={() => router.push(`/document/${doc.slug}`)}
-              className="text-left p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all group"
+        {/* Right panel — document type cards */}
+        <div className="w-1/2 overflow-y-auto bg-gray-50">
+          <div className="px-6 py-5 border-b border-gray-200 bg-white sticky top-0 z-10 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold" style={{ color: "#032147" }}>
+                Available Document Types
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">Click any document to start creating it</p>
+            </div>
+            <Link
+              href="/dashboard"
+              className="text-xs font-medium px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
             >
-              <div
-                className="text-sm font-semibold mb-1 group-hover:text-blue-600 transition-colors"
-                style={{ color: "#032147" }}
+              My documents
+            </Link>
+          </div>
+          <div className="p-4 grid grid-cols-2 gap-3">
+            {allDocuments.map((doc) => (
+              <button
+                key={doc.slug}
+                onClick={() => router.push(`/document/${doc.slug}`)}
+                className="text-left p-4 bg-white rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all group"
               >
-                {doc.name}
-              </div>
-              <div className="text-xs text-gray-500 leading-relaxed line-clamp-2">
-                {doc.description}
-              </div>
-            </button>
-          ))}
+                <div
+                  className="text-sm font-semibold mb-1 group-hover:text-blue-600 transition-colors"
+                  style={{ color: "#032147" }}
+                >
+                  {doc.name}
+                </div>
+                <div className="text-xs text-gray-500 leading-relaxed line-clamp-2">
+                  {doc.description}
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

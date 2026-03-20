@@ -1,12 +1,16 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { notFound } from "next/navigation";
 import AIChatPanel, { ChatMessage } from "@/components/AIChatPanel";
 import DocumentPreview from "@/components/DocumentPreview";
+import Header from "@/components/Header";
 import { getDocumentConfig } from "@/lib/documents/index";
+import { apiFetch } from "@/lib/api";
 
 type ApiStatus = "checking" | "connected" | "disconnected";
+type SaveStatus = "idle" | "saving" | "saved";
 
 function mergeFields(
   current: Record<string, string>,
@@ -27,11 +31,16 @@ export default function DocumentPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = use(params);
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const config = getDocumentConfig(slug);
 
   if (!config) notFound();
 
   const [formData, setFormData] = useState<Record<string, string>>(config.defaultData);
+  const [documentId, setDocumentId] = useState<number | null>(
+    searchParams.get("doc") ? Number(searchParams.get("doc")) : null
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       role: "assistant",
@@ -40,60 +49,98 @@ export default function DocumentPage({
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [apiStatus, setApiStatus] = useState<ApiStatus>("checking");
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
 
+  // Health check
   useEffect(() => {
-    fetch("http://localhost:8000/health")
+    apiFetch("/health")
       .then((r) => (r.ok ? setApiStatus("connected") : setApiStatus("disconnected")))
       .catch(() => setApiStatus("disconnected"));
   }, []);
+
+  // Load saved document if doc param present
+  useEffect(() => {
+    const docId = searchParams.get("doc");
+    if (!docId) return;
+    apiFetch(`/documents/${docId}`)
+      .then(async (r) => {
+        if (r.ok) {
+          const doc = await r.json();
+          setFormData((current) => mergeFields(current, doc.fields));
+          setDocumentId(doc.id);
+        }
+      })
+      .catch(() => {});
+  }, [searchParams]);
 
   const sendMessage = async (content: string) => {
     const userMessage: ChatMessage = { role: "user", content };
     const updatedMessages = [...messages, userMessage];
     setMessages(updatedMessages);
     setIsLoading(true);
+    setSaveStatus("saving");
 
     try {
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await apiFetch("/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: updatedMessages,
           current_fields: formData,
           document_type: slug,
+          document_id: documentId,
         }),
       });
+      if (response.status === 401) {
+        router.push("/login");
+        return;
+      }
       const data = await response.json();
-      setFormData((current) => mergeFields(current, data.fields ?? {}));
+
+      const merged = mergeFields(formData, data.fields ?? {});
+      setFormData(merged);
       setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
+
+      if (data.document_id) {
+        setDocumentId(data.document_id);
+        // Update URL without navigation
+        window.history.replaceState(null, "", `/document/${slug}?doc=${data.document_id}`);
+      }
+
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2000);
     } catch {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", content: "Something went wrong. Please try again." },
       ]);
+      setSaveStatus("idle");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <main className="flex h-screen overflow-hidden bg-gray-50">
-      <div className="no-print w-1/2 border-r border-gray-200 bg-white flex flex-col">
-        <AIChatPanel
-          messages={messages}
-          onSend={sendMessage}
-          isLoading={isLoading}
-          apiStatus={apiStatus}
-          title={`${config.name} Creator`}
-        />
-      </div>
-      <div className="w-1/2 overflow-y-auto bg-gray-50">
-        <DocumentPreview
-          config={config}
-          data={formData}
-        />
-      </div>
-    </main>
+    <div className="flex flex-col h-screen overflow-hidden">
+      <Header title={config.name} />
+      <main className="flex flex-1 overflow-hidden bg-gray-50">
+        <div className="no-print w-1/2 border-r border-gray-200 bg-white flex flex-col">
+          <AIChatPanel
+            messages={messages}
+            onSend={sendMessage}
+            isLoading={isLoading}
+            apiStatus={apiStatus}
+            title={`${config.name} Creator`}
+          />
+        </div>
+        <div className="w-1/2 overflow-y-auto bg-gray-50 flex flex-col">
+          <DocumentPreview
+            config={config}
+            data={formData}
+            saveStatus={saveStatus}
+          />
+        </div>
+      </main>
+    </div>
   );
 }
 
