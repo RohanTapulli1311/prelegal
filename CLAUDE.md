@@ -14,7 +14,13 @@ Available templates are catalogued in `catalog.json` at the project root:
 - **Backend** (`backend/`): FastAPI with a `/health` endpoint and SQLite DB initialised on startup
 - **Scripts**: `start.sh` and `stop.sh` at repo root start/stop both services
 - **Only Mutual NDA is implemented** — the other 11 templates in `catalog.json` are not yet wired up
-- No AI chat, no authentication, no document persistence yet
+- No AI chat, no authentication, no document persistence yet — all covered in future tickets
+
+## Planned Features (future tickets)
+
+- All 11 document types supported via AI chat
+- User authentication (sign up / sign in) with a users table in SQLite
+- Document persistence — saved drafts per user
 
 ## Development Process
 
