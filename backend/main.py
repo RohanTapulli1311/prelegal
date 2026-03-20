@@ -54,6 +54,7 @@ Only populate suggested_document_type if you are confident."""
 
 DOCUMENT_CONFIGS: dict[str, dict] = {
     "mutual-nda": {
+        "valid_fields": {"purpose", "effectiveDate", "mndaTermType", "mndaTermYears", "confidentialityTermType", "confidentialityTermYears", "governingLaw", "jurisdiction", "modifications", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Mutual Non-Disclosure Agreement (MNDA). Today is {date.today().isoformat()}.
 
 Your job is to have a natural conversation to collect these details:
@@ -86,6 +87,7 @@ Fields to extract:
     },
 
     "mutual-nda-coverpage": {
+        "valid_fields": {"effectiveDate", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users create a cover page for their Mutual NDA. Today is {date.today().isoformat()}.
 
 Your job is to collect these details:
@@ -108,6 +110,7 @@ Fields to extract:
     },
 
     "csa": {
+        "valid_fields": {"effectiveDate", "subscriptionPeriod", "fees", "paymentProcess", "generalCapAmount", "governingLaw", "jurisdiction", "modifications", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Cloud Service Agreement (CSA). Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the company offering the cloud service). Party 2 is the Customer.
@@ -141,6 +144,7 @@ Fields to extract:
     },
 
     "sla": {
+        "valid_fields": {"effectiveDate", "term", "endDate", "targetUptime", "targetResponseTime", "supportChannel", "uptimeCredit", "responseTimeCredit", "scheduledDowntime", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Service Level Agreement (SLA). Today is {date.today().isoformat()}.
 
 Party 1 is the Provider. Party 2 is the Customer.
@@ -178,6 +182,7 @@ Fields to extract:
     },
 
     "design-partner": {
+        "valid_fields": {"effectiveDate", "term", "endDate", "programDescription", "fees", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Design Partner Agreement. Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the company offering the pre-release product). Party 2 is the Partner (design partner providing feedback).
@@ -208,6 +213,7 @@ Fields to extract:
     },
 
     "psa": {
+        "valid_fields": {"effectiveDate", "term", "endDate", "deliverables", "fees", "paymentPeriod", "paymentProcess", "customerObligations", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Professional Services Agreement (PSA). Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the company delivering the services). Party 2 is the Customer.
@@ -243,6 +249,7 @@ Fields to extract:
     },
 
     "dpa": {
+        "valid_fields": {"effectiveDate", "dataCategories", "dataSubjectCategories", "processingPurpose", "processingDuration", "approvedSubprocessors", "governingMemberState", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Data Processing Agreement (DPA). Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the data processor). Party 2 is the Customer (the data controller).
@@ -279,6 +286,7 @@ Fields to extract:
     },
 
     "partnership": {
+        "valid_fields": {"effectiveDate", "term", "endDate", "territory", "obligations", "fees", "paymentProcess", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Partnership Agreement. Today is {date.today().isoformat()}.
 
 Party 1 is the Company. Party 2 is the Partner.
@@ -311,6 +319,7 @@ Fields to extract:
     },
 
     "software-license": {
+        "valid_fields": {"effectiveDate", "term", "endDate", "permittedUses", "licenseLimits", "fees", "paymentProcess", "generalCapAmount", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Software License Agreement. Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the licensor). Party 2 is the Customer (the licensee).
@@ -344,6 +353,7 @@ Fields to extract:
     },
 
     "pilot": {
+        "valid_fields": {"effectiveDate", "pilotPeriod", "fees", "generalCapAmount", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Pilot Agreement. Today is {date.today().isoformat()}.
 
 Party 1 is the Provider. Party 2 is the Customer evaluating the software.
@@ -372,6 +382,7 @@ Fields to extract:
     },
 
     "baa": {
+        "valid_fields": {"effectiveDate", "parentAgreement", "breachNotificationPeriod", "limitations", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft a Business Associate Agreement (BAA). Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the business associate handling PHI). Party 2 is the Company (the HIPAA covered entity).
@@ -402,6 +413,7 @@ Fields to extract:
     },
 
     "ai-addendum": {
+        "valid_fields": {"effectiveDate", "trainingData", "trainingPurposes", "trainingRestrictions", "improvementRestrictions", "governingLaw", "jurisdiction", "party1Name", "party1Title", "party1Company", "party1NoticeAddress", "party2Name", "party2Title", "party2Company", "party2NoticeAddress"},
         "chat_prompt": f"""You are a friendly legal document assistant helping users draft an AI Addendum. Today is {date.today().isoformat()}.
 
 Party 1 is the Provider (the company offering the AI-powered service). Party 2 is the Customer.
@@ -620,6 +632,13 @@ async def chat(request: ChatRequest):
 
             reply = reply_response.choices[0].message.content
             fields = GenericFieldUpdates.model_validate_json(extract_response.choices[0].message.content)
+
+            # Zero out any fields not relevant to this document type
+            valid = config.get("valid_fields", set())
+            if valid:
+                for field in fields.model_fields:
+                    if field not in valid:
+                        setattr(fields, field, None)
 
             return ChatResponse(reply=reply, fields=fields)
         except Exception as e:
